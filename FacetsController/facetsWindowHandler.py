@@ -1,7 +1,9 @@
 import json
 import os
 import sys
+from time import sleep
 import mouse
+import pyperclip
 import screeninfo
 import keyboard
 import black
@@ -112,7 +114,7 @@ def activate_duplicate_claim_tab(
         "activeMainWindowTab", MainWindowTabs.duplicate.value
     )
 
-def activate(windowName:str, stateManager: StateManager = None):
+def activateFacetsWindow(windowName:str, stateManager: StateManager = None):
     """
     Activates the window with the given name
     :windowName: the name of the window to activate
@@ -123,63 +125,60 @@ def activate(windowName:str, stateManager: StateManager = None):
         }
     """
         
-    def openOpenWindow(stateManager: StateManager = None):
-        """
-        Opens the open window
-        """
-        activateFacets()
-        keyboard.press_and_release("ctrl+o")
-        
-        logging.debug(f"Facets Location: {_get_config(stateManager, 'facetsLocation', None)}")
-        
-        foundInactiveOpenWindow = screenReading.image_matches_known_active_window_state(
-            Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.Title.InActive.png"),
-            _get_config(stateManager, "facetsLocation", (0, 0, 1920, 1080))
-        )
-        
-        foundActiveOpenWindow = screenReading.image_matches_known_active_window_state(
-            Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.Title.Active.png"),
-            _get_config(stateManager, "facetsLocation", (0, 0, 1920, 1080))
-        )
-        
-        if foundInactiveOpenWindow:
-            mouse.move(100, 100, absolute=True, duration=0.1)
-            mouse.click(button="left")
-        
-        if foundActiveOpenWindow:
-            mouse.move(100, 100, absolute=True, duration=0.1)
-            mouse.click(button="left")
-
-
-        print(f"Found inactive open window?: {foundInactiveOpenWindow}")
-        print(f"Found active open window?: {foundActiveOpenWindow}")
-    
-    def activateFacets():
-        mouse.move(10, 10, absolute=True, duration=0.1)
-        mouse.click(button="left")
-        
-        
-        
     match windowName:
         case "Open":
-            openOpenWindow()
+            openOpenWindow(stateManager)
         case "Facets":
             activateFacets()
         case _:
             raise ValueError(f"Window name {windowName} is not valid")
 
     actionList = stateManager.check_if_state_exists("afterFunctionActions")
-    logging.debug(f"Action list: {actionList}")
-    if actionList is not [None]:
+    if actionList:
         stateManager._call_functionType_list(actionList)
 
+    
+def activateFacets():
+    mouse.move(300, 1000, absolute=True, duration=0.1)
+    mouse.click(button="left")
 
-def open_new_claim(claimNumber: int, stateManager: StateManager = None):
+def openOpenWindow(stateManager: StateManager):
+    """
+    Opens the open window
+    """
+    activateFacets()
+    keyboard.press_and_release("ctrl+o")
+    
+    foundInactiveOpenWindow = screenReading.image_matches_known_active_window_state(
+        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.Title.InActive.png"),
+        _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
+    )
+    
+    foundActiveOpenWindow = screenReading.image_matches_known_active_window_state(
+        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.Title.Active.png"),
+        _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
+    )
+
+    clicked = False
+    if foundInactiveOpenWindow or foundActiveOpenWindow:
+        box = foundActiveOpenWindow if foundActiveOpenWindow else foundInactiveOpenWindow
+        # box = _get_center_of_box(box)
+        logging.debug(f"Found open window claim id input box at {box}")
+        
+        mouse.move(box[0], box[1], absolute=True, duration=0.1)
+        mouse.click(button="left")
+        clicked = True
+    
+
+    logging.debug(f"Found inactive open window?: {foundInactiveOpenWindow}")
+    logging.debug(f"Found active open window?: {foundActiveOpenWindow}")
+
+def open_new_claim(claimNumber: int, stateManager: StateManager):
     """
     Opens a new claim
     :claimNumber: the claim number to open
     """
-    activate('Open', stateManager)
+    activateFacetsWindow('Open', stateManager)
     openWindowClaimIDInputBox = screenReading.image_matches_known_active_window_state(
         Image.open(
             r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.ClaimID.InputBox.png"
@@ -187,10 +186,36 @@ def open_new_claim(claimNumber: int, stateManager: StateManager = None):
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080)),
     )
     
+    if openWindowClaimIDInputBox:
+        box = openWindowClaimIDInputBox
+        yOffset = 17
+        # box = _get_center_of_box(openWindowClaimIDInputBox)
+        logging.debug(f"Found open window claim id input box at {box}")
+
+        mouse.move(box[0] + box[2], box[1] + box[3] - yOffset, absolute=True, duration=0.1)
+        mouse.click()
+        sleep(0.1)
+        keyboard.write(pyperclip.paste())
+    else:
+        logging.debug("Could not find open window claim id input box")
+        return False
+    
     actionList = stateManager.check_if_state_exists("afterFunctionActions")
-    if actionList is not None:
+    if actionList:
         stateManager._call_functionType_list(actionList)
+    
+    return True
         
+def _get_center_of_box(rectange: tuple) -> tuple:
+    """
+    Gets the center of a box
+    :rectangle: the rectangle to get the center of
+    :return: the center of the rectangle
+    """
+    return (
+        (rectange[0] + rectange[2]) / 2,
+        (rectange[1] + rectange[3]) / 2,
+    )
     
 def _get_config(options: object, key: str, default) -> object:
     """

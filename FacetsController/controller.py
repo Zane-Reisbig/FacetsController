@@ -24,7 +24,11 @@ class Controller:
         clipContents = pyperclip.paste()
         
         if self._validate_claim_number(clipContents):
-            facetsWindowHandler.open_new_claim(clipContents, self.stateManager)
+            if facetsWindowHandler.open_new_claim(clipContents, self.stateManager):
+                logging.debug("Claim opened")
+            else:
+                raise Exception("Claim not opened")
+
         
     
     def _validate_claim_number(self, number: int) -> bool:
@@ -42,12 +46,18 @@ class Controller:
         else:
             logging.debug("Claim number is invalid")
             return False
-        
+
 
 if __name__ == "__main__":
     logging.addLevelName(4, "DEBUG")
-    logging.basicConfig(level=4)
+    logging.addLevelName(5, "ERROR")
+    logging.basicConfig(level=5, format="%(levelname)s: %(message)s")
+
+    # logging.disable(5)
+    logging.disable(4)
+
     logging.debug("Starting controller.py")
+    
     
     if 0:
         screenReading.create_rectangle_from_two_clicks({"copyToClipboard": True})
@@ -55,10 +65,9 @@ if __name__ == "__main__":
         
     stateManager = StateManager()
     
-    stateManager.add_or_update_state("facetsLocation", (0,0, 1910, 1070))
-    stateManager.add_or_update_state("afterFunctionActions", [
-        sleep(1),
-    ])
+    stateManager.add_or_update_state("facetsLocation", (0,0, 1920, 1080))
+    stateManager.add_or_update_state("afterFunctionActions", [lambda: sleep(1), ])
+    logging.error(f"State manager id: {stateManager.return_object()}")
 
     controller = Controller(stateManager)
     controller.open_new_claim_from_clipboard()

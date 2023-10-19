@@ -3,6 +3,7 @@ Scripts
 Include
 pyvenv.cfg
 config.json
-*/*.vscode
+.vscode
+.vscode/launch.json
 */FacetsWindowHandlerData
 */*__pycache__
