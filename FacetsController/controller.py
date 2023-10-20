@@ -38,12 +38,8 @@ class Controller:
                 return True
             else:
                 raise Exception("Claim not opened")
-        
-        afterClaimActions = self.stateManager.check_if_state_exists("afterClaimActions")
-        if afterClaimActions is not None:
-            self.stateManager._call_functionType_list(afterClaimActions)
-        
-        return False
+
+        raise Exception("Invalid claim number")
         
 
     def initialize_claim_for_processing(self, openClaim: bool = True):

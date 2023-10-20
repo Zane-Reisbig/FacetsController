@@ -8,6 +8,7 @@ import screeninfo
 import keyboard
 import black
 import logging
+import os
 
 from PIL import ImageGrab, Image
 from ScopeCreep.screenReading import screenReading
@@ -131,6 +132,7 @@ def activateFacetsWindow(windowName:str, stateManager: StateManager = None):
             activateFacets()
             returnValue = openOpenWindow(stateManager)
         case "Additional Modifiers":
+            activateFacets()
             returnValue = openAdditionalModifiersWindow(stateManager)
             
         case "Facets":
@@ -150,7 +152,7 @@ def openAdditionalModifiersWindow(stateManager: StateManager):
     mouse.move(0,0)
     
     foundAdditionalModifiersWindow = screenReading.image_matches_known_active_window_state(
-        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\additonalModifiers.Title.Active.png"),
+        Image.open(_get_environment_variable("additionalModifiersWindowPath")),
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
     )
     
@@ -177,12 +179,12 @@ def openOpenWindow(stateManager: StateManager):
     keyboard.press_and_release("ctrl+o")
     
     foundInactiveOpenWindow = screenReading.image_matches_known_active_window_state(
-        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.Title.InActive.png"),
+        Image.open(_get_environment_variable("inactiveOpenWindowPath")),
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
     )
     
     foundActiveOpenWindow = screenReading.image_matches_known_active_window_state(
-        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.Title.Active.png"),
+        Image.open(_get_environment_variable("activeOpenWindowPath")),
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
     )
 
@@ -204,7 +206,7 @@ def open_new_claim(claimNumber: int, stateManager: StateManager):
     """
     activateFacetsWindow('Open', stateManager)
     openWindowClaimIDInputBox = screenReading.image_matches_known_active_window_state(
-        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.ClaimID.Title.Active.png"),
+        Image.open(_get_environment_variable("openWindowClaimIDInputBoxPath")),
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080)),
     )
     
@@ -246,3 +248,10 @@ def _get_config(options: object, key: str, default) -> object:
         if key in options:
             return options[key]
     return default
+
+def _get_environment_variable(keyName) -> str:
+    with open(os.path.join(os.path.dirname(__file__), ".env"), "r") as f:
+        for line in f:
+            if keyName in line:
+                return line.split("=")[1].strip()
+    
