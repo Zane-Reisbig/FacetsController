@@ -5,6 +5,9 @@ path.append('..')
 import pyperclip
 import re
 import logging
+import keyboard
+import win32
+import win32gui
 
 from time import sleep
 
@@ -28,8 +31,69 @@ class Controller:
                 logging.debug("Claim opened")
             else:
                 raise Exception("Claim not opened")
-
         
+        afterClaimActions = self.stateManager.check_if_state_exists("afterClaimActions")
+        if afterClaimActions is not None:
+            self.stateManager._call_functionType_list(afterClaimActions)
+
+    def initialize_claim_for_processing(self, openClaim: bool = True):
+        """
+        Initializes a claim for processing
+        :openClaim: if True, opens a new claim from the clipboard
+        """
+        if openClaim:
+            self.open_new_claim_from_clipboard()
+            
+        # make sure we are at the top of the claim ✅
+        # navigate down 1 submenu using ctrl+down ✅
+        # adjudicate claim and make sure window responds to keypresses -
+        # - before continuing
+        # claim is ready to be processed
+        
+        self._navigate_to_indicitive_submenu()
+        self._hit_key_n_times("ctrl+down", 1)
+        self.adjuciate_claim()
+        
+    def adjuciate_claim(self):
+        self._hit_key_n_times("f3")
+        facetsWindowHandler.activateFacetsWindow("Additonal Modifiers")
+        
+    
+    def _wait_for_window_to_respond(self):
+        while True:
+            pass
+    
+    def _check_top_window_name(self, windowName:str, fuzzy:bool = False):
+        topMostWindow = win32gui.GetForegroundWindow()
+        topMostWindowName = win32gui.GetWindowText(topMostWindow)
+        
+        if fuzzy:
+            return windowName in topMostWindowName
+        
+        return windowName == topMostWindowName
+    
+    def _navigate_to_indicitive_submenu(self):
+        """
+        Navigates to the indicitive submenu
+        """
+        self._hit_key_n_times("ctrl+up", 6) 
+    
+    def _write_sentence(self, sentence: str):
+        """
+        writes a sentence
+        """
+        keyboard.write(sentence)
+        sleep(0.1)
+    
+    def _hit_key_n_times(self, key: str, n: int = 1):
+        """
+        Hits a key n times
+        :key: the key to hit
+        :n: the number of times to hit the key
+        """
+        for _ in range(n):
+            keyboard.press_and_release(key)
+            sleep(0.1)
     
     def _validate_claim_number(self, number: int) -> bool:
         
@@ -70,5 +134,6 @@ if __name__ == "__main__":
     logging.error(f"State manager id: {stateManager.return_object()}")
 
     controller = Controller(stateManager)
-    controller.open_new_claim_from_clipboard()
+    # controller.open_new_claim_from_clipboard()
+    controller.initialize_claim_for_processing()
     

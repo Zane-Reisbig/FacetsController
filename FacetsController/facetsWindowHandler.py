@@ -121,13 +121,18 @@ def activateFacetsWindow(windowName:str, stateManager: StateManager = None):
         - windows {
             "Open",
             "Facets",
+            "Additonal Modifiers",
             
         }
     """
         
     match windowName:
         case "Open":
+            activateFacets()
             openOpenWindow(stateManager)
+        case "Additonal Modifiers":
+            openAdditonalModifiersWindow(stateManager)
+            
         case "Facets":
             activateFacets()
         case _:
@@ -137,6 +142,28 @@ def activateFacetsWindow(windowName:str, stateManager: StateManager = None):
     if actionList:
         stateManager._call_functionType_list(actionList)
 
+def openAdditonalModifiersWindow(stateManager: StateManager):
+    keyboard.press_and_release("ctrl+t")
+    
+    foundAddionalModifiersWindow = screenReading.image_matches_known_active_window_state(
+        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\additonalModifiersWindow.Title.Active.png"),
+        _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
+    )
+    
+    if foundAddionalModifiersWindow:
+        box = foundAddionalModifiersWindow
+        # box = _get_center_of_box(box)
+        logging.debug(f"Found additonal modifiers window at {box}")
+        
+        mouse.move(box[0], box[1], absolute=True, duration=0.1)
+        mouse.click(button="left")
+    
+    
+    
+    
+    
+    
+    
     
 def activateFacets():
     mouse.move(300, 1000, absolute=True, duration=0.1)
@@ -146,7 +173,6 @@ def openOpenWindow(stateManager: StateManager):
     """
     Opens the open window
     """
-    activateFacets()
     keyboard.press_and_release("ctrl+o")
     
     foundInactiveOpenWindow = screenReading.image_matches_known_active_window_state(
@@ -188,14 +214,14 @@ def open_new_claim(claimNumber: int, stateManager: StateManager):
     
     if openWindowClaimIDInputBox:
         box = openWindowClaimIDInputBox
-        yOffset = 17
-        # box = _get_center_of_box(openWindowClaimIDInputBox)
+        box = _get_center_of_box(openWindowClaimIDInputBox)
         logging.debug(f"Found open window claim id input box at {box}")
 
-        mouse.move(box[0] + box[2], box[1] + box[3] - yOffset, absolute=True, duration=0.1)
+        mouse.move(box[0] + box[2], box[1] + box[3], absolute=True, duration=0.1)
         mouse.click()
         sleep(0.1)
-        keyboard.write(pyperclip.paste())
+        keyboard.write(claimNumber)
+        keyboard.press_and_release("enter")
     else:
         logging.debug("Could not find open window claim id input box")
         return False
@@ -205,16 +231,11 @@ def open_new_claim(claimNumber: int, stateManager: StateManager):
         stateManager._call_functionType_list(actionList)
     
     return True
-        
-def _get_center_of_box(rectange: tuple) -> tuple:
-    """
-    Gets the center of a box
-    :rectangle: the rectangle to get the center of
-    :return: the center of the rectangle
-    """
+
+def _get_center_of_box(box: tuple) -> tuple:
     return (
-        (rectange[0] + rectange[2]) / 2,
-        (rectange[1] + rectange[3]) / 2,
+        box[0] + (box[2] / 2),
+        box[1] + (box[3] / 2),
     )
     
 def _get_config(options: object, key: str, default) -> object:
