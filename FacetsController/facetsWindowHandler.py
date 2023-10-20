@@ -121,17 +121,17 @@ def activateFacetsWindow(windowName:str, stateManager: StateManager = None):
         - windows {
             "Open",
             "Facets",
-            "Additonal Modifiers",
+            "Additional Modifiers",
             
         }
     """
-        
+    returnValue = None
     match windowName:
         case "Open":
             activateFacets()
-            openOpenWindow(stateManager)
-        case "Additonal Modifiers":
-            openAdditonalModifiersWindow(stateManager)
+            returnValue = openOpenWindow(stateManager)
+        case "Additional Modifiers":
+            returnValue = openAdditionalModifiersWindow(stateManager)
             
         case "Facets":
             activateFacets()
@@ -141,28 +141,29 @@ def activateFacetsWindow(windowName:str, stateManager: StateManager = None):
     actionList = stateManager.check_if_state_exists("afterFunctionActions")
     if actionList:
         stateManager._call_functionType_list(actionList)
-
-def openAdditonalModifiersWindow(stateManager: StateManager):
-    keyboard.press_and_release("ctrl+t")
     
-    foundAddionalModifiersWindow = screenReading.image_matches_known_active_window_state(
-        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\additonalModifiersWindow.Title.Active.png"),
+    return returnValue
+
+def openAdditionalModifiersWindow(stateManager: StateManager):
+    keyboard.press_and_release("ctrl+t")
+    logging.debug("Pressed ctrl+t")
+    mouse.move(0,0)
+    
+    foundAdditionalModifiersWindow = screenReading.image_matches_known_active_window_state(
+        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\additonalModifiers.Title.Active.png"),
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
     )
     
-    if foundAddionalModifiersWindow:
-        box = foundAddionalModifiersWindow
+    if foundAdditionalModifiersWindow:
+        box = foundAdditionalModifiersWindow
         # box = _get_center_of_box(box)
-        logging.debug(f"Found additonal modifiers window at {box}")
+        logging.debug(f"Found additional modifiers window at {box}")
         
         mouse.move(box[0], box[1], absolute=True, duration=0.1)
         mouse.click(button="left")
+        return True
     
-    
-    
-    
-    
-    
+    return False
     
     
 def activateFacets():
@@ -185,7 +186,6 @@ def openOpenWindow(stateManager: StateManager):
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080))
     )
 
-    clicked = False
     if foundInactiveOpenWindow or foundActiveOpenWindow:
         box = foundActiveOpenWindow if foundActiveOpenWindow else foundInactiveOpenWindow
         # box = _get_center_of_box(box)
@@ -193,11 +193,9 @@ def openOpenWindow(stateManager: StateManager):
         
         mouse.move(box[0], box[1], absolute=True, duration=0.1)
         mouse.click(button="left")
-        clicked = True
-    
+        return True
 
-    logging.debug(f"Found inactive open window?: {foundInactiveOpenWindow}")
-    logging.debug(f"Found active open window?: {foundActiveOpenWindow}")
+    return False
 
 def open_new_claim(claimNumber: int, stateManager: StateManager):
     """
@@ -206,9 +204,7 @@ def open_new_claim(claimNumber: int, stateManager: StateManager):
     """
     activateFacetsWindow('Open', stateManager)
     openWindowClaimIDInputBox = screenReading.image_matches_known_active_window_state(
-        Image.open(
-            r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.ClaimID.InputBox.png"
-        ),
+        Image.open(r"C:\Users\zan61897\OneDrive - Corewell Health\Desktop\Garbage\USE THIS FOR NEW PROJECTS PLEASE\FacetsController\.venv\FacetsController\FacetsWindowHandlerData\openWindow.ClaimID.Title.Active.png"),
         _get_config(stateManager.return_object(), "facetsLocation", (0, 0, 1920, 1080)),
     )
     
@@ -217,7 +213,7 @@ def open_new_claim(claimNumber: int, stateManager: StateManager):
         box = _get_center_of_box(openWindowClaimIDInputBox)
         logging.debug(f"Found open window claim id input box at {box}")
 
-        mouse.move(box[0] + box[2], box[1] + box[3], absolute=True, duration=0.1)
+        mouse.move(box[0], box[1] + 10, absolute=True, duration=0.1)
         mouse.click()
         sleep(0.1)
         keyboard.write(claimNumber)

@@ -8,6 +8,8 @@ import logging
 import keyboard
 import win32
 import win32gui
+import winsound
+import mouse
 
 from time import sleep
 
@@ -27,50 +29,106 @@ class Controller:
         clipContents = pyperclip.paste()
         
         if self._validate_claim_number(clipContents):
-            if facetsWindowHandler.open_new_claim(clipContents, self.stateManager):
+            isClaimOpened = facetsWindowHandler.open_new_claim(clipContents, self.stateManager)
+            if isClaimOpened:
                 logging.debug("Claim opened")
+                afterClaimActions = self.stateManager.check_if_state_exists("afterClaimActions")
+                if afterClaimActions is not None:
+                    self.stateManager._call_functionType_list(afterClaimActions)
+                return True
             else:
                 raise Exception("Claim not opened")
         
         afterClaimActions = self.stateManager.check_if_state_exists("afterClaimActions")
         if afterClaimActions is not None:
             self.stateManager._call_functionType_list(afterClaimActions)
+        
+        return False
+        
 
     def initialize_claim_for_processing(self, openClaim: bool = True):
         """
         Initializes a claim for processing
         :openClaim: if True, opens a new claim from the clipboard
         """
+        originalMousePosition = mouse.get_position()
         if openClaim:
-            self.open_new_claim_from_clipboard()
+            if not self.open_new_claim_from_clipboard():
+                raise Exception("Claim not opened")
             
-        # make sure we are at the top of the claim ✅
-        # navigate down 1 submenu using ctrl+down ✅
-        # adjudicate claim and make sure window responds to keypresses -
-        # - before continuing
-        # claim is ready to be processed
+        self._navigate_to_line_items_submenu()
         
-        self._navigate_to_indicitive_submenu()
-        self._hit_key_n_times("ctrl+down", 1)
-        self.adjuciate_claim()
-        
+        if not self.adjuciate_claim():
+            raise Exception("Claim not adjuciated")
+
+        # Close Additional Modifiers window
+        self._hit_key_n_times("esc")
+        mouse.move(originalMousePosition[0], originalMousePosition[1])
+
+        return True
+
+    
     def adjuciate_claim(self):
         self._hit_key_n_times("f3")
-        facetsWindowHandler.activateFacetsWindow("Additonal Modifiers")
+
+        windowIsActive = False
+        counter = 0
+        while not windowIsActive:
+            windowName = "Additional Modifiers"
+            if self._check_top_window_name(windowName, True):
+                windowIsActive = True
+
+            secondWindowActiveCheck = facetsWindowHandler.activateFacetsWindow(
+                                            "Additional Modifiers", stateManager)
+            
+            logging.error(f"Window is active: {windowIsActive}")
+            logging.error(f"Second window is active: {secondWindowActiveCheck}")
+            
+
+            if windowIsActive and secondWindowActiveCheck:
+                return True
+            
+            if counter > 100:
+                while True:
+                    winsound.Beep(1000, 1000)
+                    sleep(0.7)
+            counter += 1
         
-    
-    def _wait_for_window_to_respond(self):
-        while True:
-            pass
-    
-    def _check_top_window_name(self, windowName:str, fuzzy:bool = False):
+        return False 
+
+    def _check_top_window_name(self, windowName:str, fuzzy:bool = False, makeTopWindow:bool = True, addRemote:str = True):
+        windowName = windowName + " - \\\\Remote" if addRemote else windowName
+        
         topMostWindow = win32gui.GetForegroundWindow()
         topMostWindowName = win32gui.GetWindowText(topMostWindow)
+        logging.debug(f"Top most window name: {topMostWindowName}")
+        logging.debug(f"My Window name: {windowName}")
         
+        foundWindow = False
         if fuzzy:
-            return windowName in topMostWindowName
+            foundWindow = windowName in topMostWindowName
+            logging.debug(f"{windowName} in {topMostWindowName}: {foundWindow}")
+            logging.debug(f"{repr(windowName)} || {repr(topMostWindowName)}")
+        else:
+            foundWindow = windowName == topMostWindowName
+            logging.debug(f"{windowName} in {topMostWindowName}: {foundWindow}")
+            logging.debug(f"{repr(windowName)} || {repr(topMostWindowName)}")
         
-        return windowName == topMostWindowName
+        if makeTopWindow:
+            for _ in range(10):
+                worked = win32gui.SetForegroundWindow(topMostWindow)
+                logging.debug(f"Set top window to foreground: {worked}")
+
+        
+        return foundWindow
+    
+    def _navigate_to_line_items_submenu(self):
+        self._navigate_to_indicitive_submenu()
+        self._hit_key_n_times("ctrl+down", 1)
+    
+    def _navigate_to_notes_submenu(self):
+        self._navigate_to_indicitive_submenu()
+        self._hit_key_n_times("ctrl+down", 2)
     
     def _navigate_to_indicitive_submenu(self):
         """
@@ -135,5 +193,5 @@ if __name__ == "__main__":
 
     controller = Controller(stateManager)
     # controller.open_new_claim_from_clipboard()
-    controller.initialize_claim_for_processing()
+    controller.initialize_claim_for_processing(True)
     
